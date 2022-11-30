@@ -22,6 +22,3 @@ Junto a la Fundación Getulio Vargas y el posterior análisis en conjunto con la
 **Principales resultados**
 
 
-
-% https://towardsdatascience.com/visualizing-networks-in-python-d70f4cbeb259
-
