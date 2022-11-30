@@ -1,0 +1,166 @@
+---
+title: "Analisis Facebook e Instagram interacciones"
+author: "Dt. Jaime Lincovil"
+date: "2022-11-28"
+output:
+  html_document: default
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<img src="https://raw.githubusercontent.com/jelincovil/fund_multitudes_proceso_constituyente_cl/main/datos%20y%20figuras/Screenshot%202022-11-24%2010.34.57.png" width="200"> 
+<img src="https://raw.githubusercontent.com/jelincovil/logos_images/main/icons8-instagram.svg" width="100"> 
+<img src="https://raw.githubusercontent.com/jelincovil/logos_images/main/icons8-facebook.svg" width="100">
+<img src= "https://raw.githubusercontent.com/jelincovil/logos_images/main/icons8-r-100.png" width="100">
+
+#
+**Resumen:** En este md resumo el análisis de interacciones de Facebook e Instagram de diversos usuarios de interactuando durante el proceso constituyente de Chile.
+
+## Parte I: datos de Facebook.
+
+Observaciones:
+
+- Clase de datos: tibble
+- Irregulars Times  en formato Ano-mes-dia hora:minutos:sesgundos
+- Constants parameters: 
+- Page: usuarios de Facebook y Post por dia. 
+
+**Principales variables**
+
+Total of comments, shares, post interactions. 
+$$
+\text{Number of reactions: Number of Wow + Haha + thanksful,loves + sad + angry.}
+$$
+
+Proposal Exploratory analysis:
+
+1. Uni/MUltivariate summary of: 
+ (a) Total of comments, 
+ (b) Shares, 
+ (c) Post interactions. 
+ (d) Number of reactions.
+ 
+2 Summary by User's Facebook.  
+3 Summary of % distributed in Total reactions.
+
+
+```{r, results='hide', message=FALSE}
+# Primera cargo de modulos
+library(readxl)
+library(dplyr)
+library(infer)
+library(ggplot2)
+library(robustbase)
+```
+
+
+A continuacion, presentamos el grafico de boxplot del tipo robusto de los numeros de comentarios, reacciones y veces que un mensaje fue compartido.
+
+```{r}
+setwd("/cloud/project/Bases datos/Proyecto: Fundacion Multitudes")
+post_bf <- read_xlsx("TopPosts_[FB]RRSSConstituyentes.xlsx", skip=9)
+adjbox(post_bf$`Number of Comments (total)`,
+        post_bf$`Number of Reactions`,
+        post_bf$`Number of Shares`,
+        names = c("NComments",
+                  "NReactions",
+                  "NShares"),
+       col= c(rgb(1,0,0,0.5), rgb(0,0,1,0.5), rgb(0,1,0,0.6)),
+       horizontal = TRUE,
+       main="Number of comments, reactions and shares")
+
+legend("topright", legend=c("Comments","Reactions", "Shares"), 
+       col=c(rgb(1,0,0,0.5), rgb(0,0,1,0.5), rgb(0,1,0,0.6)),
+       pt.cex= 2, pch=15, cex = 0.75  )
+
+```
+
+En los tres casos observamos una asimetría a la derecha, es decir, la mayoría de las observaciones tienen valores bajos, pero eventualmente, valores muy grandes en periodos acotados de tiempo. Destacan los grandes valores del número de reacciones.
+
+A seguir presentamos estos mismos datos en un histograma.
+
+```{r}
+setwd("/cloud/project/Bases datos/Proyecto: Fundacion Multitudes")
+
+intervalos <- seq(0, 1300,  by=25)
+
+hist(post_bf$`Number of Reactions`, col= rgb(1,0,0,0.5),
+     main='Number of comments, reactions and shares',
+     xlab='Counts', xlim = c(0,200), ylim=c(0,600),
+     breaks = intervalos)
+hist(post_bf$`Number of Comments (total)`,
+     col= rgb(0,0,1,0.5), breaks = intervalos, add=TRUE)
+hist(post_bf$`Number of Shares`, col= rgb(0,1,0,0.6),
+     breaks = intervalos, add=TRUE)
+
+legend("topright", legend=c("Comments","Reactions", "Shares"), 
+       col=c(rgb(1,0,0,0.5), rgb(0,0,1,0.5), rgb(0,1,0,0.6)),
+       pt.cex=2, pch=15 )
+
+```
+
+
+Observamos que comentarios, reacciones and comparitod tienen colas pesadas y valores extremos.
+
+
+```{r, results='hide', message=FALSE}
+
+library(plotly)
+library(GGally)
+library(gridExtra)
+
+```
+
+Presentamos los gráficos de dispersión de las combinaciones por par.
+
+```{r}
+# Correlation Matrix
+p <- ggpairs(post_bf[c(10,18,22)], title="correlogram with ggpairs()") 
+ggplotly(p)
+
+```
+
+
+Observamos una fuerte asociación ($r=0.813$) entre el número de comentarios y el número de veces que se compartió un posteo.
+
+
+```{r}
+# Total by users
+sums <- post_bf %>%
+        group_by(Page) %>%
+  summarise(Comments = sum(`Number of Comments (total)`),
+            Reactions = sum(`Number of Reactions`),
+            Shares = sum(`Number of Shares`))
+grid.arrange( tableGrob(sums) )
+
+```
+
+```{r}
+
+total.sum <- post_bf %>%
+  summarise( Reactions = sum(`Number of Reactions`) )
+  
+total.sum <- as.numeric(total.sum)
+parcial.sum <- post_bf %>%
+  summarise( Wow = sum(`Number of Wow`),
+             Haha = sum(`Number of Haha`),
+             Thank = sum(`Number of Thankful`),
+             Love = sum(`Number of Love`),
+             Sad = sum(`Number of Sad`),
+             Angry = sum(`Number of Angry`))
+
+parcial.sum <- round( (parcial.sum/total.sum)*100, 3)
+parcial.sum
+
+grid.arrange( tableGrob(parcial.sum) )
+
+
+```
+
+
+Los constituyentes **Cristina Dorador** y **Hugo Gutierres** son los constituyentes con mayor impacto.
+
